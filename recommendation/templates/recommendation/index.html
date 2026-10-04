@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'recommendation/styles.css' %}">
+    <title>Movie Recommendation</title>
+</head>
+
+<body>
+
+    <div class="root-wrap">
+        <div class="wrap">
+            <div class="nav-wrap">
+                <div class="logo-wrap">
+                    <h1>MOVIE4U</h1>
+                </div>
+                <div class="nav-menu-wrap">
+                    <button>Sign In</button>
+                </div>
+            </div>
+
+            <div class="container-main-wrap center">
+                <div class="mid-container-text center">
+                    <h1>Unlimited movies, </h1>
+                    <h1>TV shows and more</h1>
+                    <h3>Your Next Favorite Movie Awaits – Find, Watch, Enjoy!</h3>
+                    <p>Explore a world of films tailored to your unique taste and preferences.</p>
+                </div>
+                <div class="mid-container-search">
+                    <form class="search-box" method="POST">
+                        {% csrf_token %}
+                        <div class="search-input">
+                            {{ form.movie_name }}
+                        </div>
+                        <button type="submit">Search</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Movie Details Section -->
+        {% if movie_details %}
+        <div class="movie-container">
+            <div class="left-section center">
+                <div class="movie-wrap">
+
+                    <div class="movie-img center">
+                        <img src="{{ movie_details.poster }}" alt="{{ movie_details.title }} Poster">
+                    </div>
+                    <div class="movie-desc">
+                        <p><strong>Title:</strong> {{ movie_details.title }}</p>
+                        <p><strong>Year:</strong> {{ movie_details.year }}</p>
+                        <p><strong>Description:</strong> {{ movie_details.description }}</p>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="right-section center">
+                {% if recommendations %}
+                <div class="movies-wrap">
+                    <div class="recommended-movies-list">
+                        {% for movie, score, poster in recommendations %}
+                        <div class="recommended-movie center">
+                            <div class="movie-img center ">
+                                <img src="{{ poster }}" alt="{{ movie }} Poster">
+                            </div>
+                            <div class="r-movie-desc">
+                                <p><strong>Title:</strong> {{ movie }}</p>
+                                <p><strong>Similarity Score:</strong> {{ score|floatformat:2 }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <p>No movie details found. Please try again.</p>
+        {% endif %}
+
+
+
+    </div>
+
+</body>
+
+</html>
