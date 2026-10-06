@@ -25,7 +25,18 @@ SECRET_KEY = 'django-insecure-3-puss-@_o)v!8)fpn_c%($65%m9udzmqv%b5t+%5zm&+&(nig
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-# ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'cinematch-h5qo.onrender.com',
+    '.onrender.com',
+    'localhost',
+    '127.0.0.1',
+    '*',
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://cinematch-h5qo.onrender.com',
+    'https://*.onrender.com',
+]
 
 OMDB_API_KEY = 'edfdb3dd'
 # Application definition
@@ -49,6 +60,13 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+try:
+    import whitenoise  # type: ignore
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+except ImportError:
+    pass
 
 ROOT_URLCONF = 'project.urls'
 
