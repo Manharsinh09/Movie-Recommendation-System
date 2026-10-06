@@ -1,0 +1,19 @@
+# CineMatch AI - Movie Recommendation System Dependencies
+
+# Core Web Framework
+Django>=5.0.0
+
+# Machine Learning & Recommendation Engine (TF-IDF & Cosine Similarity)
+scikit-learn>=1.4.0
+scipy>=1.12.0
+numpy>=1.26.0
+
+# Data Processing & Metadata
+pandas>=2.0.0
+
+# HTTP Client for OMDb API Live Metadata Enrichment
+requests>=2.31.0
+
+# Django Utilities & Production WSGI/ASGI Support
+asgiref>=3.8.0
+sqlparse>=0.5.0
