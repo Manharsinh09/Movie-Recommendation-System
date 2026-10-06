@@ -1,89 +1,65 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Error {{ status_code }} | Something went wrong</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <title>Error {{ status_code }} | CineMatch AI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f7f9fc;
-            color: #333;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .error-container {
-            max-width: 600px;
-            background: #fff;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-        }
-
-        .error-code {
-            font-size: 100px;
-            font-weight: bold;
-            color: #2e86de;
-        }
-
-        .error-message {
-            font-size: 24px;
-            margin: 20px 0;
-        }
-
-        .error-description {
-            font-size: 16px;
-            color: #666;
-            margin-bottom: 30px;
-        }
-
-        .home-button {
-            display: inline-block;
-            padding: 12px 25px;
-            background: #2e86de;
-            color: white;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            transition: background 0.3s;
-        }
-
-        .home-button:hover {
-            background: #1b4f72;
-        }
-    </style>
+    <!-- Stylesheet with Cache Busting -->
+    <link rel="stylesheet" href="{% static 'recommendation/styles.css' %}?v={% now 'U' %}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
 </head>
-<body>
-    <div class="error-container">
-        <div class="error-code">{{ status_code }}</div>
-        <div class="error-message">
+
+<body style="display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px;">
+
+    <div class="hero-glow-sphere"></div>
+
+    <div class="spotlight-card" style="max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; text-align: center; align-items: center; padding: 48px 36px;">
+        <div class="pill-badge" style="margin-bottom: 16px;">
+            <span class="pill-pulse"></span>
+            <span>HTTP Status {{ status_code }}</span>
+        </div>
+
+        <h1 style="font-family: var(--font-heading); font-size: 5rem; font-weight: 900; line-height: 1; letter-spacing: -2px;" class="hero-title-gradient">
+            {{ status_code }}
+        </h1>
+
+        <h2 style="font-family: var(--font-heading); font-size: 1.8rem; font-weight: 800; margin: 12px 0 16px;">
             {% if status_code == 404 %}
-                Page Not Found
+                Cinematic Sequence Not Found
             {% elif status_code == 500 %}
-                Internal Server Error
+                Recommendation Cluster Error
             {% elif status_code == 403 %}
-                Permission Denied
-            {% elif status_code == 400 %}
-                Bad Request
+                Access Denied to Film Reel
             {% else %}
-                Something Went Wrong
+                Unexpected Transmission Error
             {% endif %}
+        </h2>
+
+        <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.6; margin-bottom: 32px; max-width: 440px;">
+            {% if status_code == 404 %}
+                The movie page or route you requested could not be located in our vector database. Let's get you back on track.
+            {% else %}
+                An issue occurred while processing the recommendation vectors. Our systems are recovering automatically.
+            {% endif %}
+        </p>
+
+        <div style="display: flex; gap: 14px;">
+            <a href="/" class="btn-search-submit" style="padding: 12px 28px; text-decoration: none;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span>Return to CineMatch AI</span>
+            </a>
         </div>
-        <div class="error-description">
-            Sorry, the page you're looking for doesn’t exist or an unexpected error has occurred.
-        </div>
-        <a href="/" class="home-button">Go Home</a>
     </div>
+
 </body>
+
 </html>

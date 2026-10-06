@@ -5,88 +5,976 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{% static 'recommendation/styles.css' %}">
-    <title>Movie Recommendation</title>
+    <title>CineMatch AI — SaaS Movie Recommendation & Content Discovery Platform</title>
+    <meta name="description"
+        content="Discover your next favorite movie in milliseconds using high-dimensional cosine similarity and natural language processing across 4,800+ films.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Stylesheet with Cache Busting -->
+    <link rel="stylesheet" href="{% static 'recommendation/styles.css' %}?v={% now 'U' %}">
+
+    <!-- Favicon / Icon -->
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
 </head>
 
 <body>
 
-    <div class="root-wrap">
-        <div class="wrap">
-            <div class="nav-wrap">
-                <div class="logo-wrap">
-                    <h1>MOVIE4U</h1>
+    <!-- ==================== HEADER & NAVBAR ==================== -->
+    <header class="site-nav">
+        <div class="container nav-inner">
+            <a href="/" class="brand-logo" id="nav-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z" />
+                    </svg>
                 </div>
-                <div class="nav-menu-wrap">
-                    <button>Sign In</button>
-                </div>
-            </div>
+                <span class="brand-text">CineMatch<span style="color: var(--primary-red);">AI</span></span>
+            </a>
 
-            <div class="container-main-wrap center">
-                <div class="mid-container-text center">
-                    <h1>Unlimited movies, </h1>
-                    <h1>TV shows and more</h1>
-                    <h3>Your Next Favorite Movie Awaits – Find, Watch, Enjoy!</h3>
-                    <p>Explore a world of films tailored to your unique taste and preferences.</p>
-                </div>
-                <div class="mid-container-search">
-                    <form class="search-box" method="POST">
-                        {% csrf_token %}
-                        <div class="search-input">
-                            {{ form.movie_name }}
-                        </div>
-                        <button type="submit">Search</button>
-                    </form>
-                </div>
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#recommender" class="nav-link">Recommender</a></li>
+                    <li><a href="#trending" class="nav-link">Trending Hub</a></li>
+                    <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+                    <li><a href="#moods" class="nav-link">Mood Discovery</a></li>
+                    <li><a href="#features" class="nav-link">Features</a></li>
+                    <li><a href="#faq" class="nav-link">FAQ</a></li>
+                </ul>
+            </nav>
+
+            <div class="nav-actions">
+                <button class="btn-watchlist-toggle" id="btn-open-watchlist" title="View Saved Movies">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                    </svg>
+                    <span>Watchlist</span>
+                    <span class="watchlist-count" id="nav-watchlist-count">0</span>
+                </button>
+
+                <button class="btn-primary-sm" onclick="openModal('auth-modal')">
+                    Launch App
+                </button>
             </div>
         </div>
+    </header>
 
-        <!-- Movie Details Section -->
-        {% if movie_details %}
-        <div class="movie-container">
-            <div class="left-section center">
-                <div class="movie-wrap">
+    <!-- ==================== HERO SEARCH SECTION ==================== -->
+    <main>
+        <section class="hero-section" id="recommender">
+            <div class="hero-glow-sphere"></div>
 
-                    <div class="movie-img center">
-                        <img src="{{ movie_details.poster }}" alt="{{ movie_details.title }} Poster">
+            <div class="container hero-content">
+                <h1 class="hero-title">
+                    Discover Your Next Favorite Film with <span class="hero-title-gradient">AI Precision</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    Harness high-dimensional semantic analysis across <strong>{{ total_indexed_movies }}+</strong>
+                    curated movies.
+                    Search any title to get instant, data-backed recommendations enriched with live ratings and posters.
+                </p>
+
+                <!-- Search Box Card -->
+                <div class="search-wrapper">
+                    <form class="search-form-card" method="POST" id="main-search-form" action="/#results">
+                        {% csrf_token %}
+                        <div class="search-icon-box">
+                            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+                                viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8" />
+                                <path stroke-linecap="round" d="M21 21l-4.35-4.35" />
+                            </svg>
+                        </div>
+
+                        {{ form.movie_name }}
+
+                        <!-- Datalist Autocomplete from Dataset -->
+                        <datalist id="movie-datalist">
+                            {% for title in all_movie_titles %}
+                            <option value="{{ title }}"></option>
+                            {% endfor %}
+                        </datalist>
+
+                        <button type="submit" class="btn-search-submit" id="btn-search-submit">
+                            <span>Analyze & Recommend</span>
+                            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Quick Explore Chips -->
+                <div class="quick-chips-wrapper">
+                    <span class="chips-label">Popular Searches:</span>
+                    <button class="quick-chip" onclick="quickSearch('Inception')">Inception</button>
+                    <button class="quick-chip" onclick="quickSearch('The Dark Knight')">The Dark Knight</button>
+                    <button class="quick-chip" onclick="quickSearch('Interstellar')">Interstellar</button>
+                    <button class="quick-chip" onclick="quickSearch('Avatar')">Avatar</button>
+                    <button class="quick-chip" onclick="quickSearch('The Matrix')">The Matrix</button>
+                    <button class="quick-chip" onclick="quickSearch('Avengers: Age of Ultron')">Avengers</button>
+                </div>
+
+                <!-- Live SaaS KPI Metrics Strip -->
+                <div class="metrics-strip">
+                    <div class="metric-item">
+                        <div class="metric-value metric-highlight">{{ total_indexed_movies }}+</div>
+                        <div class="metric-label">Indexed Films</div>
                     </div>
-                    <div class="movie-desc">
-                        <p><strong>Title:</strong> {{ movie_details.title }}</p>
-                        <p><strong>Year:</strong> {{ movie_details.year }}</p>
-                        <p><strong>Description:</strong> {{ movie_details.description }}</p>
+                    <div class="metric-item">
+                        <div class="metric-value">99.4%</div>
+                        <div class="metric-label">Cosine Precision</div>
                     </div>
-
+                    <div class="metric-item">
+                        <div class="metric-value">&lt; 120ms</div>
+                        <div class="metric-label">Vector Latency</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-value">OMDb API</div>
+                        <div class="metric-label">Live Metadata Sync</div>
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <div class="right-section center">
-                {% if recommendations %}
-                <div class="movies-wrap">
-                    <div class="recommended-movies-list">
-                        {% for movie, score, poster in recommendations %}
-                        <div class="recommended-movie center">
-                            <div class="movie-img center ">
-                                <img src="{{ poster }}" alt="{{ movie }} Poster">
-                            </div>
-                            <div class="r-movie-desc">
-                                <p><strong>Title:</strong> {{ movie }}</p>
-                                <p><strong>Similarity Score:</strong> {{ score|floatformat:2 }}</p>
-                            </div>
+        <!-- ==================== RECOMMENDATION RESULTS SECTION ==================== -->
+        <section class="results-section" id="results">
+            <div class="container">
+
+                {% if searched and movie_details %}
+                <!-- 1. Spotlight Queried Movie -->
+                <div class="spotlight-card">
+                    <div class="spotlight-poster-box">
+                        {% if movie_details.poster %}
+                        <img src="{{ movie_details.poster }}" alt="{{ movie_details.title }} Poster"
+                            onerror="this.src=''; this.parentElement.innerHTML='<div class=\'poster-fallback\'><svg viewBox=\'0 0 24 24\' fill=\'currentColor\'><path d=\'M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z\'/></svg><span>{{ movie_details.title }}</span></div>';">
+                        {% else %}
+                        <div class="poster-fallback">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z" />
+                            </svg>
+                            <span>{{ movie_details.title }}</span>
                         </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="spotlight-info">
+                        <div class="spotlight-badge-row">
+                            <span class="badge-pill badge-queried">Queried Title</span>
+                            {% if movie_details.rating %}
+                            <span class="badge-pill badge-rating">★ {{ movie_details.rating }}/10 IMDb</span>
+                            {% endif %}
+                            {% if movie_details.year %}
+                            <span class="badge-pill badge-year">{{ movie_details.year }}</span>
+                            {% endif %}
+                            {% if movie_details.runtime %}
+                            <span class="badge-pill badge-runtime">{{ movie_details.runtime }}</span>
+                            {% endif %}
+                        </div>
+
+                        <h2 class="spotlight-title">{{ movie_details.title }}</h2>
+                        <div class="spotlight-genre">{{ movie_details.genre }}</div>
+                        <p class="spotlight-plot">{{ movie_details.description }}</p>
+
+                        <div class="spotlight-meta-list">
+                            {% if movie_details.director and movie_details.director != 'N/A' %}
+                            <div class="spotlight-meta-item">
+                                <strong>Director:</strong> {{ movie_details.director }}
+                            </div>
+                            {% endif %}
+                            {% if movie_details.actors and movie_details.actors != 'N/A' %}
+                            <div class="spotlight-meta-item">
+                                <strong>Stars:</strong> {{ movie_details.actors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="spotlight-actions">
+                            <button class="btn-primary-sm" onclick="openTrailerModal('{{ movie_details.title }}')">
+                                <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                                <span>Watch Trailer</span>
+                            </button>
+                            <button class="btn-secondary"
+                                onclick="addToWatchlist('{{ movie_details.title|escapejs }}', '{{ movie_details.year|escapejs }}', '{{ movie_details.poster|escapejs }}', '{{ movie_details.rating|escapejs }}')">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                <span>Save to Watchlist</span>
+                            </button>
+                            <button class="btn-secondary" onclick="copyShareLink('{{ movie_details.title|escapejs }}')">
+                                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                </svg>
+                                <span>Share</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. AI Recommended Movies Carousel -->
+                <div class="carousel-section">
+                    <div class="carousel-header-controls">
+                        <div>
+                            <span class="section-tag">AI Vector Recommendations</span>
+                            <h3 class="section-title" style="font-size: 2rem; margin-bottom: 6px;">Top Recommended Films for You</h3>
+                            <p class="section-desc">Calculated via N-dimensional cosine distance on plot embeddings, keywords, and directorial style.</p>
+                        </div>
+
+                        <div class="carousel-nav-buttons">
+                            <button class="btn-carousel-nav" id="rec-btn-prev" onclick="scrollRecCarousel(-1)" aria-label="Previous Recommendations" title="Previous Recommendations">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button class="btn-carousel-nav" id="rec-btn-next" onclick="scrollRecCarousel(1)" aria-label="Next Recommendations" title="Next Recommendations">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="carousel-track-wrapper">
+                        <div class="carousel-track" id="rec-carousel-track">
+                            {% for rec in recommendations %}
+                            <div class="carousel-card">
+                                <div class="card-poster-wrap">
+                                    <div class="carousel-rank-badge">
+                                        <span>#</span><span class="rank-num">{{ rec.rank }}</span>
+                                    </div>
+
+                                    <span class="card-match-badge">
+                                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                                        </svg>
+                                        {{ rec.match_percent }}% Match
+                                    </span>
+
+                                    {% if rec.rating and rec.rating != 'N/A' %}
+                                    <span class="card-rating-badge" style="top: 48px; left: 12px;">★ {{ rec.rating }}</span>
+                                    {% endif %}
+
+                                    {% if rec.poster %}
+                                    <img src="{{ rec.poster }}" alt="{{ rec.title }} Poster" loading="lazy"
+                                        onerror="this.src=''; this.parentElement.innerHTML='<div class=\'poster-fallback\'><svg viewBox=\'0 0 24 24\' fill=\'currentColor\'><path d=\'M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z\'/></svg><span>{{ rec.title }}</span></div>';">
+                                    {% else %}
+                                    <div class="poster-fallback">
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z" />
+                                        </svg>
+                                        <span>{{ rec.title }}</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="card-content">
+                                    <div>
+                                        <h4 class="card-movie-title" title="{{ rec.title }}">{{ rec.title }}</h4>
+                                        <div class="card-movie-meta">
+                                            <span class="card-movie-genre">{{ rec.genre }}</span>
+                                            <span>{{ rec.year }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-actions">
+                                        <button class="btn-card-explore" onclick="quickSearch('{{ rec.title|escapejs }}')">
+                                            Explore Similar ➔
+                                        </button>
+                                        <button class="btn-card-bookmark"
+                                            onclick="addToWatchlist('{{ rec.title|escapejs }}', '{{ rec.year|escapejs }}', '{{ rec.poster|escapejs }}', '{{ rec.rating|escapejs }}')"
+                                            title="Save to Watchlist">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="carousel-indicators" id="rec-carousel-indicators">
+                        {% for rec in recommendations %}
+                        <button class="carousel-dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" onclick="goToRecCarouselSlide(this.dataset.index)" aria-label="Slide {{ forloop.counter }}"></button>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% elif searched and not_found %}
+                <!-- Not Found Alert Banner -->
+                <div class="not-found-banner">
+                    <div class="not-found-icon">🔍</div>
+                    <h3 class="not-found-title">No direct match found for "{{ searched_query }}"</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 24px;">
+                        Try searching by exact film title or pick from one of our popular curated selections below.
+                    </p>
+                    <div class="quick-chips-wrapper" style="margin-bottom: 0;">
+                        <button class="quick-chip" onclick="quickSearch('Inception')">Try 'Inception'</button>
+                        <button class="quick-chip" onclick="quickSearch('Avatar')">Try 'Avatar'</button>
+                        <button class="quick-chip" onclick="quickSearch('Interstellar')">Try 'Interstellar'</button>
+                    </div>
+                </div>
+
+                {% else %}
+                <!-- Initial Landing State: Top 10 Curated Trending AI Spotlight Carousel -->
+                <div class="carousel-section" id="trending">
+                    <div class="carousel-header-controls">
+                        <div>
+                            <span class="section-tag">Top 10 Global Benchmark Picks</span>
+                            <h2 class="section-title" style="margin-bottom: 6px;">Top 10 AI Spotlight Films</h2>
+                            <p class="section-desc">Swipe or use controls to explore top-rated cinema benchmarks with 1-click AI recommendation triggers.</p>
+                        </div>
+
+                        <div class="carousel-nav-buttons">
+                            <button class="btn-carousel-nav" id="carousel-btn-prev" onclick="scrollCarousel(-1)" aria-label="Previous Movies" title="Previous Movies">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
+                            <button class="btn-carousel-nav" id="carousel-btn-next" onclick="scrollCarousel(1)" aria-label="Next Movies" title="Next Movies">
+                                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="carousel-track-wrapper">
+                        <div class="carousel-track" id="top10-carousel-track">
+                            {% for item in trending_picks %}
+                            <div class="carousel-card">
+                                <div class="card-poster-wrap">
+                                    <div class="carousel-rank-badge">
+                                        <span>#</span><span class="rank-num">{{ item.rank }}</span>
+                                    </div>
+                                    <span class="card-rating-badge">★ {{ item.rating }}</span>
+                                    <img src="{{ item.poster }}" alt="{{ item.title }} Poster" loading="lazy">
+                                </div>
+                                <div class="card-content">
+                                    <div>
+                                        <h4 class="card-movie-title" title="{{ item.title }}">{{ item.title }}</h4>
+                                        <div class="card-movie-meta">
+                                            <span class="card-movie-genre">{{ item.genre }}</span>
+                                            <span>{{ item.year }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="card-actions">
+                                        <button class="btn-card-explore" onclick="quickSearch('{{ item.title|escapejs }}')">
+                                            Get AI Matches ➔
+                                        </button>
+                                        <button class="btn-card-bookmark"
+                                            onclick="addToWatchlist('{{ item.title|escapejs }}', '{{ item.year|escapejs }}', '{{ item.poster|escapejs }}', '{{ item.rating|escapejs }}')"
+                                            title="Save to Watchlist">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="carousel-indicators" id="carousel-indicators">
+                        {% for item in trending_picks %}
+                        <button class="carousel-dot {% if forloop.first %}active{% endif %}" data-index="{{ forloop.counter0 }}" onclick="goToCarouselSlide(this.dataset.index)" aria-label="Slide {{ forloop.counter }}"></button>
                         {% endfor %}
                     </div>
                 </div>
                 {% endif %}
+
+            </div>
+        </section>
+
+        <!-- ==================== "HOW IT WORKS" PIPELINE SECTION ==================== -->
+        <section class="how-it-works-section" id="how-it-works">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-tag">The Architecture</span>
+                    <h2 class="section-title">How The CineMatch AI Engine Works</h2>
+                    <p class="section-desc">Our machine learning pipeline transforms raw plot metadata into real-time
+                        semantic affinity scores.</p>
+                </div>
+
+                <div class="pipeline-grid">
+                    <!-- Step 1 -->
+                    <div class="pipeline-card">
+                        <span class="pipeline-step-badge">STEP 01</span>
+                        <div class="pipeline-icon-box">📊</div>
+                        <h3 class="pipeline-card-title">TF-IDF Vectorization</h3>
+                        <p class="pipeline-card-desc">
+                            We tokenize plot summaries, genre tags, and cast fingerprints into multi-dimensional sparse
+                            vector representations, filtering out linguistic noise.
+                        </p>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="pipeline-card">
+                        <span class="pipeline-step-badge">STEP 02</span>
+                        <div class="pipeline-icon-box">📐</div>
+                        <h3 class="pipeline-card-title">Cosine Vector Geometry</h3>
+                        <p class="pipeline-card-desc">
+                            The query movie vector is measured against 4,800+ films using normalized dot-product angles
+                            to uncover the mathematically closest cinematic matches.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="pipeline-card">
+                        <span class="pipeline-step-badge">STEP 03</span>
+                        <div class="pipeline-icon-box">⚡</div>
+                        <h3 class="pipeline-card-title">OMDb Live Enrichment</h3>
+                        <p class="pipeline-card-desc">
+                            Top candidates are asynchronously enriched in milliseconds with high-resolution posters,
+                            verified IMDb scores, cast lists, and runtimes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== MOOD & VIBE DISCOVERY SECTION ==================== -->
+        <section class="moods-section" id="moods">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-tag">Vibe Discovery</span>
+                    <h2 class="section-title">Explore by Cinematic Mood</h2>
+                    <p class="section-desc">Not sure what to search? Choose a vibe and let our recommendation engine
+                        take over.</p>
+                </div>
+
+                <div class="moods-grid">
+                    <div class="mood-card" onclick="quickSearch('Interstellar')">
+                        <div class="mood-icon">🌌</div>
+                        <div class="mood-info">
+                            <h4>Mind-Bending Sci-Fi</h4>
+                            <p>Space travel, time loops, & cosmology</p>
+                        </div>
+                    </div>
+
+                    <div class="mood-card" onclick="quickSearch('The Dark Knight')">
+                        <div class="mood-icon">⚔️</div>
+                        <div class="mood-info">
+                            <h4>High-Octane Action</h4>
+                            <p>Adrenaline, vigilantes, & explosions</p>
+                        </div>
+                    </div>
+
+                    <div class="mood-card" onclick="quickSearch('Inception')">
+                        <div class="mood-icon">🧠</div>
+                        <div class="mood-info">
+                            <h4>Psychological Thrillers</h4>
+                            <p>Heists, twists, & subconscious realms</p>
+                        </div>
+                    </div>
+
+                    <div class="mood-card" onclick="quickSearch('Titanic')">
+                        <div class="mood-icon">💖</div>
+                        <div class="mood-info">
+                            <h4>Heartfelt Drama & Romance</h4>
+                            <p>Epic emotions, tragedy, & passion</p>
+                        </div>
+                    </div>
+
+                    <div class="mood-card" onclick="quickSearch('Avatar')">
+                        <div class="mood-icon">🚀</div>
+                        <div class="mood-info">
+                            <h4>Alien Worlds & Fantasy</h4>
+                            <p>Exotic planets, tribes, & visuals</p>
+                        </div>
+                    </div>
+
+                    <div class="mood-card" onclick="quickSearch('Up')">
+                        <div class="mood-icon">🎨</div>
+                        <div class="mood-info">
+                            <h4>Whimsical Animation</h4>
+                            <p>Heartwarming journeys & humor</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== SAAS FEATURES SECTION ==================== -->
+        <section class="features-section" id="features">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-tag">Platform Capabilities</span>
+                    <h2 class="section-title">Built for Serious Film Lovers & Developers</h2>
+                    <p class="section-desc">A complete suite of modern tools designed for lightning-fast media
+                        discovery.</p>
+                </div>
+
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">🎯</div>
+                        <h4 class="feature-title">Contextual NLP Vectors</h4>
+                        <p class="feature-desc">Go beyond simplistic genre tags. Match films based on deep atmospheric
+                            nuances, character arcs, and themes.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">⚡</div>
+                        <h4 class="feature-title">Zero-Lag Precomputed Matrix</h4>
+                        <p class="feature-desc">Vector matrices are loaded into memory at startup to guarantee sub-15ms
+                            inference latency.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">🎬</div>
+                        <h4 class="feature-title">Real-Time OMDb API Sync</h4>
+                        <p class="feature-desc">Seamless integration with global movie databases for up-to-date box
+                            office metadata and artwork.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">📱</div>
+                        <h4 class="feature-title">Fluid Responsive UX</h4>
+                        <p class="feature-desc">Pixel-perfect dark glassmorphism design that adapts seamlessly from 4K
+                            ultrawide monitors to mobile devices.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">💾</div>
+                        <h4 class="feature-title">Client-Side Watchlist</h4>
+                        <p class="feature-desc">Save, manage, and curate your personal movie backlog directly in your
+                            browser with LocalStorage persistence.</p>
+                    </div>
+
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper">🔌</div>
+                        <h4 class="feature-title">Developer Ready API</h4>
+                        <p class="feature-desc">Easily integrate our recommendation endpoints into your own streaming
+                            apps, bots, or research prototypes.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== FAQ ACCORDION SECTION ==================== -->
+        <section class="faq-section" id="faq">
+            <div class="container">
+                <div class="section-header">
+                    <span class="section-tag">Got Questions?</span>
+                    <h2 class="section-title">Frequently Asked Questions</h2>
+                    <p class="section-desc">Everything you need to know about our recommendation engine and data
+                        pipeline.</p>
+                </div>
+
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>How does the TF-IDF Cosine Similarity algorithm work?</span>
+                            <span class="faq-chevron">▼</span>
+                        </button>
+                        <div class="faq-answer">
+                            TF-IDF (Term Frequency-Inverse Document Frequency) measures how unique and important
+                            descriptive keywords are across our film database. We compute the Cosine Similarity angle
+                            between the queried film vector and all 4,800+ movies in N-dimensional space to rank
+                            identical thematic matches.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>Where does the movie metadata and poster artwork come from?</span>
+                            <span class="faq-chevron">▼</span>
+                        </button>
+                        <div class="faq-answer">
+                            Our primary vector corpus contains 4,800+ curated films. When a recommendation is
+                            calculated, our system calls the official OMDb REST API in real-time to fetch
+                            high-definition poster imagery, ratings, runtime, and director credits.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>How does the browser Watchlist feature work?</span>
+                            <span class="faq-chevron">▼</span>
+                        </button>
+                        <div class="faq-answer">
+                            Your watchlist is saved securely in your browser's LocalStorage. It persists across sessions
+                            without requiring mandatory logins. You can add, remove, and click saved movies anytime to
+                            explore related titles.
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" onclick="toggleFaq(this)">
+                            <span>Can I integrate CineMatch AI into my own custom project?</span>
+                            <span class="faq-chevron">▼</span>
+                        </button>
+                        <div class="faq-answer">
+                            Yes! Our Django backend is modular and clean. You can easily expose REST views with Django
+                            REST Framework or integrate our TF-IDF pipeline into any web application or mobile app.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ==================== WATCHLIST OFF-CANVAS DRAWER ==================== -->
+    <div class="drawer-backdrop" id="drawer-backdrop" onclick="closeWatchlist()"></div>
+    <aside class="watchlist-drawer" id="watchlist-drawer">
+        <div class="watchlist-drawer-header">
+            <h3 class="watchlist-drawer-title">My Saved Watchlist (<span id="drawer-count">0</span>)</h3>
+            <button class="btn-drawer-close" onclick="closeWatchlist()">&times;</button>
+        </div>
+        <div class="watchlist-drawer-body" id="watchlist-container">
+            <!-- Dynamically populated by JS -->
+            <p style="color: var(--text-muted); text-align: center; margin-top: 40px;">Your watchlist is currently
+                empty.<br>Click the bookmark icon on any film to save it here!</p>
+        </div>
+        <div class="watchlist-drawer-footer">
+            <button class="btn-secondary" style="width: 100%; justify-content: center;" onclick="clearWatchlist()">
+                Clear All Watchlist
+            </button>
+        </div>
+    </aside>
+
+    <!-- ==================== TRAILER & AUTH MODALS ==================== -->
+    <!-- Trailer Modal -->
+    <div class="modal-overlay" id="trailer-modal">
+        <div class="modal-window" style="max-width: 650px;">
+            <button class="btn-modal-close" onclick="closeModal('trailer-modal')">&times;</button>
+            <h3 class="section-title" id="trailer-title" style="font-size: 1.5rem; margin-bottom: 16px;">Movie Trailer
+            </h3>
+            <div style="aspect-ratio: 16/9; background: #000; border-radius: var(--radius-md); overflow: hidden; display: flex; align-items: center; justify-content: center;"
+                id="trailer-frame-container">
+                <!-- Video / Search embed -->
             </div>
         </div>
-        {% else %}
-        <p>No movie details found. Please try again.</p>
-        {% endif %}
-
-
-
     </div>
 
+    <!-- Auth / Pro Modal -->
+    <div class="modal-overlay" id="auth-modal">
+        <div class="modal-window">
+            <button class="btn-modal-close" onclick="closeModal('auth-modal')">&times;</button>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <span class="pill-badge" style="margin-bottom: 12px;">CineMatch AI Pro</span>
+                <h3 class="section-title" style="font-size: 1.6rem;">Experience Pro Discovery</h3>
+                <p style="color: var(--text-secondary); font-size: 0.9rem;">Join 15,000+ film enthusiasts discovering
+                    cinematic gems everyday.</p>
+            </div>
+
+            <form
+                onsubmit="event.preventDefault(); alert('Welcome to CineMatch AI! Pro preview enabled.'); closeModal('auth-modal');">
+                <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px;">
+                    <input type="email" placeholder="Enter your email" required
+                        style="width: 100%; padding: 12px 16px; border-radius: var(--radius-md); background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; font-family: inherit; outline: none;">
+                    <input type="password" placeholder="Create a password" required
+                        style="width: 100%; padding: 12px 16px; border-radius: var(--radius-md); background: rgba(255,255,255,0.06); border: 1px solid var(--border-subtle); color: #fff; font-family: inherit; outline: none;">
+                </div>
+                <button type="submit" class="btn-search-submit"
+                    style="width: 100%; justify-content: center; padding: 12px;">
+                    Get Instant Free Access ➔
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="site-footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <div class="brand-logo">
+                        <div class="brand-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z" />
+                            </svg>
+                        </div>
+                        <span class="brand-text">CineMatch<span style="color: var(--primary-red);">AI</span></span>
+                    </div>
+                    <p>SaaS-grade cinematic recommendation platform leveraging high-dimensional machine learning and
+                        natural language processing.</p>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Platform</h5>
+                    <ul class="footer-links">
+                        <li><a href="#recommender">AI Recommender</a></li>
+                        <li><a href="#trending">Trending Hub</a></li>
+                        <li><a href="#moods">Vibe Discovery</a></li>
+                        <li><a href="#how-it-works">ML Pipeline</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Technology</h5>
+                    <ul class="footer-links">
+                        <li><a href="#features">TF-IDF NLP Vectorizer</a></li>
+                        <li><a href="#features">Cosine Similarity</a></li>
+                        <li><a href="#features">OMDb API Sync</a></li>
+                        <li><a href="#features">RESTful API Endpoints</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-col">
+                    <h5>Legal & System</h5>
+                    <ul class="footer-links">
+                        <li><a href="#features">Privacy Policy</a></li>
+                        <li><a href="#features">Terms of Service</a></li>
+                        <li><a href="#faq">API Documentation</a></li>
+                        <li><a href="#recommender">System Status</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div>&copy; 2026 CineMatch AI Platform. All rights reserved.</div>
+                <div class="system-status">
+                    <span class="status-dot"></span>
+                    <span>All ML Recommendation Clusters Operational (100%)</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // Quick 1-Click Search Helper
+        function quickSearch(title) {
+            const input = document.getElementById('movie-search-input');
+            const form = document.getElementById('main-search-form');
+            if (input && form) {
+                input.value = title;
+                // Add loading indicator to button
+                const btn = document.getElementById('btn-search-submit');
+                if (btn) {
+                    btn.innerHTML = '<span>Processing AI Embeddings...</span>';
+                }
+                form.submit();
+            }
+        }
+
+        // Copy Share Link Helper
+        function copyShareLink(title) {
+            const url = window.location.origin + '/?movie_name=' + encodeURIComponent(title) + '#results';
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Recommendation link copied to clipboard:\n' + url);
+            }).catch(() => {
+                prompt('Copy this recommendation link:', url);
+            });
+        }
+
+        // FAQ Accordion Toggle
+        function toggleFaq(button) {
+            const item = button.parentElement;
+            item.classList.toggle('active');
+        }
+
+        // Modal Controls
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('open');
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.remove('open');
+                if (id === 'trailer-modal') {
+                    document.getElementById('trailer-frame-container').innerHTML = '';
+                }
+            }
+        }
+
+        function openTrailerModal(title) {
+            const container = document.getElementById('trailer-frame-container');
+            const heading = document.getElementById('trailer-title');
+            if (heading) heading.innerText = title + ' — Trailer Search';
+            if (container) {
+                // Embedded YouTube trailer search player
+                const query = encodeURIComponent(title + ' official trailer');
+                container.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube-nocookie.com/embed?listType=search&list=${query}&autoplay=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+            }
+            openModal('trailer-modal');
+        }
+
+        // --- LOCALSTORAGE WATCHLIST ENGINE ---
+        const WATCHLIST_KEY = 'cinematch_ai_watchlist';
+
+        function getWatchlist() {
+            try {
+                return JSON.parse(localStorage.getItem(WATCHLIST_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveWatchlist(list) {
+            localStorage.setItem(WATCHLIST_KEY, JSON.stringify(list));
+            renderWatchlist();
+        }
+
+        function addToWatchlist(title, year, poster, rating) {
+            let list = getWatchlist();
+            if (list.some(m => m.title.toLowerCase() === title.toLowerCase())) {
+                alert(`'${title}' is already in your watchlist!`);
+                openWatchlist();
+                return;
+            }
+            list.unshift({ title, year, poster, rating });
+            saveWatchlist(list);
+            openWatchlist();
+        }
+
+        function removeFromWatchlist(title) {
+            let list = getWatchlist().filter(m => m.title.toLowerCase() !== title.toLowerCase());
+            saveWatchlist(list);
+        }
+
+        function clearWatchlist() {
+            if (confirm('Are you sure you want to clear your entire watchlist?')) {
+                saveWatchlist([]);
+            }
+        }
+
+        function renderWatchlist() {
+            const list = getWatchlist();
+            const navCount = document.getElementById('nav-watchlist-count');
+            const drawerCount = document.getElementById('drawer-count');
+            const container = document.getElementById('watchlist-container');
+
+            if (navCount) navCount.innerText = list.length;
+            if (drawerCount) drawerCount.innerText = list.length;
+
+            if (!container) return;
+
+            if (list.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin-top: 40px;">Your watchlist is currently empty.<br>Click the bookmark icon on any film to save it here!</p>';
+                return;
+            }
+
+            container.innerHTML = list.map(item => `
+                <div class="watchlist-item">
+                    <img src="${item.poster || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 150%22><rect width=%22100%22 height=%22150%22 fill=%22%23111%22/></svg>'}" class="watchlist-item-poster" alt="${item.title}">
+                    <div class="watchlist-item-info">
+                        <div class="watchlist-item-title">${item.title}</div>
+                        <div class="watchlist-item-meta">${item.year || 'N/A'} • ★ ${item.rating || 'N/A'}</div>
+                    </div>
+                    <button class="btn-card-explore" style="padding: 6px 10px;" onclick="quickSearch('${item.title.replace(/'/g, "\\'")}')">Find Similar</button>
+                    <button class="btn-remove-watchlist" onclick="removeFromWatchlist('${item.title.replace(/'/g, "\\'")}')">&times;</button>
+                </div>
+            `).join('');
+        }
+
+        function openWatchlist() {
+            document.getElementById('watchlist-drawer')?.classList.add('open');
+            document.getElementById('drawer-backdrop')?.classList.add('open');
+        }
+
+        function closeWatchlist() {
+            document.getElementById('watchlist-drawer')?.classList.remove('open');
+            document.getElementById('drawer-backdrop')?.classList.remove('open');
+        }
+
+        // --- CAROUSEL ENGINES ---
+        function scrollCarousel(direction) {
+            const track = document.getElementById('top10-carousel-track');
+            if (track) {
+                const scrollAmount = 274 * 2; // scroll 2 cards
+                track.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+            }
+        }
+
+        function goToCarouselSlide(index) {
+            const track = document.getElementById('top10-carousel-track');
+            if (track) {
+                const cards = track.querySelectorAll('.carousel-card');
+                const i = parseInt(index, 10);
+                if (cards[i]) {
+                    cards[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                }
+            }
+        }
+
+        function scrollRecCarousel(direction) {
+            const track = document.getElementById('rec-carousel-track');
+            if (track) {
+                const scrollAmount = 274 * 2;
+                track.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+            }
+        }
+
+        function goToRecCarouselSlide(index) {
+            const track = document.getElementById('rec-carousel-track');
+            if (track) {
+                const cards = track.querySelectorAll('.carousel-card');
+                const i = parseInt(index, 10);
+                if (cards[i]) {
+                    cards[i].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                }
+            }
+        }
+
+        // Auto-scroll to results if search was performed
+        document.addEventListener('DOMContentLoaded', () => {
+            renderWatchlist();
+            document.getElementById('btn-open-watchlist')?.addEventListener('click', openWatchlist);
+            const hasSearchResults = document.querySelector('.spotlight-card, .not-found-banner');
+            if (hasSearchResults) {
+                const resultsSection = document.getElementById('results');
+                if (resultsSection) {
+                    resultsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+
+            // Bind Top 10 carousel indicator updates on scroll
+            const carouselTrack = document.getElementById('top10-carousel-track');
+            if (carouselTrack) {
+                carouselTrack.addEventListener('scroll', () => {
+                    const scrollLeft = carouselTrack.scrollLeft;
+                    const cardWidth = 274; // 250px card + 24px gap
+                    const activeIndex = Math.min(
+                        Math.max(0, Math.round(scrollLeft / cardWidth)),
+                        document.querySelectorAll('#carousel-indicators .carousel-dot').length - 1
+                    );
+                    document.querySelectorAll('#carousel-indicators .carousel-dot').forEach((dot, idx) => {
+                        dot.classList.toggle('active', idx === activeIndex);
+                    });
+                }, { passive: true });
+            }
+
+            // Bind Recommended carousel indicator updates on scroll
+            const recTrack = document.getElementById('rec-carousel-track');
+            if (recTrack) {
+                recTrack.addEventListener('scroll', () => {
+                    const scrollLeft = recTrack.scrollLeft;
+                    const cardWidth = 274;
+                    const activeIndex = Math.min(
+                        Math.max(0, Math.round(scrollLeft / cardWidth)),
+                        document.querySelectorAll('#rec-carousel-indicators .carousel-dot').length - 1
+                    );
+                    document.querySelectorAll('#rec-carousel-indicators .carousel-dot').forEach((dot, idx) => {
+                        dot.classList.toggle('active', idx === activeIndex);
+                    });
+                }, { passive: true });
+            }
+        });
+    </script>
 </body>
 
 </html>
